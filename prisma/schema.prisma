@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      Role     @default(VIEWER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sales             Sale[]
+  expenses          Expense[]
+  bonusesReceived   Bonus[]          @relation("BonusReceiver")
+  bonusesGranted    Bonus[]          @relation("BonusGranter")
+  assignedCustomers Customer[]
+  assignedTasks     Task[]
+  teamLeader        Team[]
+  teamMemberships   TeamMember[]
+  projectAssignments ProjectAssignment[]
+  commissions       UserProjectCommission[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  LEADER
+  SELLER
+  VIEWER
+}
+
+model Sale {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  date        DateTime @default(now())
+  status      String   @default("pending")
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  customerId  Int
+  customer    Customer @relation(fields: [customerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("sales")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  sales     Sale[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customers")
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  status      String   @default("pending")
+  dueDate     DateTime?
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tasks")
+}
+
+model Team {
+  id          Int      @id @default(autoincrement())
+  name        String
+  leaderId    Int
+  leader      User     @relation(fields: [leaderId], references: [id])
+  members     TeamMember[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  teamId    Int
+  team      Team     @relation(fields: [teamId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  joinedAt  DateTime @default(now())
+
+  @@map("team_members")
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  description String
+  date        DateTime @default(now())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("expenses")
+}
+
+model Bonus {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  description String
+  date        DateTime @default(now())
+  receiverId  Int
+  receiver    User     @relation("BonusReceiver", fields: [receiverId], references: [id])
+  granterId   Int
+  granter     User     @relation("BonusGranter", fields: [granterId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("bonuses")
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  budget      Float
+  status      String   @default("active")
+  assignments ProjectAssignment[]
+  commissions UserProjectCommission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("projects")
+}
+
+model ProjectAssignment {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  role      String
+  startDate DateTime @default(now())
+  endDate   DateTime?
+
+  @@map("project_assignments")
+}
+
+model UserProjectCommission {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  amount    Float
+  date      DateTime @default(now())
+
+  @@map("user_project_commissions")
+}
